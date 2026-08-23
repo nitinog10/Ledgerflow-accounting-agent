@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="674" viewBox="0 0 760 674" role="img" aria-label="Demo invoice from Hoshangabad Road Hardware">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffdf8"/>
+      <stop offset="100%" stop-color="#f2ede1"/>
+    </linearGradient>
+  </defs>
+  <style>
+    text { font-family: "Helvetica Neue", Arial, sans-serif; fill: #7b7468; }
+    .brand { font-size: 25px; font-weight: 700; letter-spacing: -0.3px; }
+    .meta { font-size: 12.5px; fill: #a29b8f; }
+    .tag { font-size: 11px; letter-spacing: 1.6px; fill: #a29b8f; }
+    .head { font-size: 11px; letter-spacing: 1.2px; fill: #a29b8f; }
+    .cell { font-size: 13px; }
+    .muted { fill: #a29b8f; }
+    .mono { font-family: "SFMono-Regular", Consolas, monospace; font-size: 12.5px; }
+    .right { text-anchor: end; }
+    .grand { font-size: 17px; font-weight: 700; }
+  </style>
+  <rect width="760" height="674" fill="url(#paper)"/>
+  <rect x="24" y="24" width="712" height="626" fill="none" stroke="#e0d9c9" stroke-width="1.5"/>
+
+  <text x="60" y="86" class="brand">Hoshangabad Road Hardware</text>
+  <text x="60" y="110" class="meta">Hoshangabad Road, Bhopal</text>
+  <text x="60" y="130" class="meta">GSTIN: ________________</text>
+  <text x="700" y="86" class="tag right">TAX INVOICE</text>
+  <text x="700" y="112" class="meta right">Invoice No: HH-77</text>
+  <text x="700" y="132" class="meta right">Date: illegible</text>
+
+  <line x1="60" y1="160" x2="700" y2="160" stroke="#e0d9c9" stroke-width="1"/>
+  <text x="60" y="196" class="head">BILLED TO</text>
+  <text x="60" y="220" class="cell">Nagar Enterprises</text>
+  <text x="60" y="240" class="meta">MP Nagar Zone II, Bhopal, Madhya Pradesh 462011</text>
+  <text x="60" y="260" class="meta">GSTIN: 23AAACN1234A1ZL</text>
+
+  <rect x="48" y="368" width="664" height="30" fill="#efe8d9"/>
+  <text x="60" y="388" class="head">DESCRIPTION</text>
+  <text x="392" y="388" class="head">HSN</text>
+  <text x="486" y="388" class="head right">QTY</text>
+  <text x="586" y="388" class="head right">RATE</text>
+  <text x="700" y="388" class="head right">AMOUNT</text>
+  
+    <text x="60" y="420" class="cell">Assorted fasteners</text>
+    <text x="392" y="420" class="cell mono">-</text>
+    <text x="486" y="420" class="cell mono right">-</text>
+    <text x="586" y="420" class="cell mono right">-</text>
+    <text x="700" y="420" class="cell mono right">-</text>
+
+  <line x1="470" y1="458" x2="700" y2="458" stroke="#e0d9c9"/>
+  
+    <text x="470" y="480" class="cell muted">Taxable value</text>
+    <text x="700" y="480" class="cell mono right">not readable</text>
+  <line x1="470" y1="504" x2="700" y2="504" stroke="#1c1917" stroke-width="1.2"/>
+  <text x="470" y="528" class="grand">Grand total</text>
+  <text x="700" y="528" class="grand right">₹1,860.00</text>
+
+  <text x="60" y="586" class="meta">For Hoshangabad Road Hardware</text>
+  <text x="60" y="620" class="tag">SIGNATURE AREA BLANK</text>
+</svg>

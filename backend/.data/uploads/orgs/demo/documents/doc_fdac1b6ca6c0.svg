@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="764" viewBox="0 0 760 764" role="img" aria-label="Demo invoice from Arera Stationers">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffdf8"/>
+      <stop offset="100%" stop-color="#faf7f0"/>
+    </linearGradient>
+  </defs>
+  <style>
+    text { font-family: "Helvetica Neue", Arial, sans-serif; fill: #1c1917; }
+    .brand { font-size: 25px; font-weight: 700; letter-spacing: -0.3px; }
+    .meta { font-size: 12.5px; fill: #57534e; }
+    .tag { font-size: 11px; letter-spacing: 1.6px; fill: #57534e; }
+    .head { font-size: 11px; letter-spacing: 1.2px; fill: #57534e; }
+    .cell { font-size: 13px; }
+    .muted { fill: #57534e; }
+    .mono { font-family: "SFMono-Regular", Consolas, monospace; font-size: 12.5px; }
+    .right { text-anchor: end; }
+    .grand { font-size: 17px; font-weight: 700; }
+  </style>
+  <rect width="760" height="764" fill="url(#paper)"/>
+  <rect x="24" y="24" width="712" height="716" fill="none" stroke="#e0d9c9" stroke-width="1.5"/>
+
+  <text x="60" y="86" class="brand">Arera Stationers</text>
+  <text x="60" y="110" class="meta">Arera Colony, Bhopal, Madhya Pradesh</text>
+  <text x="60" y="130" class="meta">GSTIN: 23AAGCA5678M1Z9</text>
+  <text x="700" y="86" class="tag right">TAX INVOICE</text>
+  <text x="700" y="112" class="meta right">Invoice No: AS-2211</text>
+  <text x="700" y="132" class="meta right">Date: 18/08/2026</text>
+
+  <line x1="60" y1="160" x2="700" y2="160" stroke="#e0d9c9" stroke-width="1"/>
+  <text x="60" y="196" class="head">BILLED TO</text>
+  <text x="60" y="220" class="cell">Nagar Enterprises</text>
+  <text x="60" y="240" class="meta">MP Nagar Zone II, Bhopal, Madhya Pradesh 462011</text>
+  <text x="60" y="260" class="meta">GSTIN: 23AAACN1234A1ZL</text>
+
+  <rect x="48" y="368" width="664" height="30" fill="#f4efe2"/>
+  <text x="60" y="388" class="head">DESCRIPTION</text>
+  <text x="392" y="388" class="head">HSN</text>
+  <text x="486" y="388" class="head right">QTY</text>
+  <text x="586" y="388" class="head right">RATE</text>
+  <text x="700" y="388" class="head right">AMOUNT</text>
+  
+    <text x="60" y="420" class="cell">A4 Copier Paper 75 GSM (ream)</text>
+    <text x="392" y="420" class="cell mono">4802</text>
+    <text x="486" y="420" class="cell mono right">40</text>
+    <text x="586" y="420" class="cell mono right">265.00</text>
+    <text x="700" y="420" class="cell mono right">10,600.00</text>
+    <text x="60" y="454" class="cell">Box File</text>
+    <text x="392" y="454" class="cell mono">4820</text>
+    <text x="486" y="454" class="cell mono right">25</text>
+    <text x="586" y="454" class="cell mono right">96.00</text>
+    <text x="700" y="454" class="cell mono right">2,400.00</text>
+
+  <line x1="470" y1="492" x2="700" y2="492" stroke="#e0d9c9"/>
+  
+    <text x="470" y="514" class="cell muted">Taxable value</text>
+    <text x="700" y="514" class="cell mono right">₹13,000.00</text>
+    <text x="470" y="542" class="cell muted">CGST 9%</text>
+    <text x="700" y="542" class="cell mono right">₹1,170.00</text>
+    <text x="470" y="570" class="cell muted">SGST 9%</text>
+    <text x="700" y="570" class="cell mono right">₹1,170.00</text>
+  <line x1="470" y1="594" x2="700" y2="594" stroke="#1c1917" stroke-width="1.2"/>
+  <text x="470" y="618" class="grand">Grand total</text>
+  <text x="700" y="618" class="grand right">₹15,340.00</text>
+
+  <text x="60" y="676" class="meta">For Arera Stationers</text>
+  <path d="M60 706 c 22 -18 34 12 54 -4 s 30 -20 52 2 s 26 -14 44 -2" fill="none" stroke="#1c1917" stroke-width="1.6" stroke-linecap="round"/>
+  <text x="60" y="732" class="tag">AUTHORISED SIGNATORY</text>
+</svg>

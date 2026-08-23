@@ -1,0 +1,32 @@
+{
+  "clean-domestic": {
+    "confidence": 0.98,
+    "status": "READY_FOR_APPROVAL",
+    "exceptions": []
+  },
+  "missing-gstin": {
+    "confidence": 0.96,
+    "status": "NEEDS_REVIEW",
+    "exceptions": ["GSTIN_MISSING"]
+  },
+  "total-mismatch": {
+    "confidence": 0.97,
+    "status": "NEEDS_REVIEW",
+    "exceptions": ["TOTAL_MISMATCH"]
+  },
+  "duplicate-invoice": {
+    "confidence": 0.98,
+    "status": "NEEDS_REVIEW",
+    "exceptions": ["DUPLICATE_INVOICE"]
+  },
+  "interstate-igst": {
+    "confidence": 0.98,
+    "status": "READY_FOR_APPROVAL",
+    "exceptions": []
+  },
+  "low-quality-missing-quantity": {
+    "confidence": 0.54,
+    "status": "NEEDS_REVIEW",
+    "exceptions": ["LOW_CONFIDENCE", "QUANTITY_MISSING"]
+  }
+}

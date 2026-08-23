@@ -1,0 +1,125 @@
+{
+  "dataset": "ledgerflow-synthetic-gst-invoices-v1",
+  "notes": "All business names and GSTIN-like identifiers are fictional test values.",
+  "cases": [
+    {
+      "id": "clean-domestic",
+      "fileName": "01-clean-domestic.png",
+      "expectedStatus": "READY_FOR_APPROVAL",
+      "expectedExceptions": [],
+      "expectedFields": {
+        "vendorName": "Madhya Steel Traders",
+        "gstin": "23ABCDE1234F1Z5",
+        "invoiceNumber": "MST-2026-081",
+        "invoiceDate": "2026-08-20",
+        "subtotal": 11500,
+        "cgst": 1035,
+        "sgst": 1035,
+        "igst": 0,
+        "total": 13570,
+        "lineItems": [
+          { "name": "GI Pipe", "quantity": 20, "rate": 500, "amount": 10000 },
+          { "name": "Welding Wire", "quantity": 5, "rate": 300, "amount": 1500 }
+        ]
+      }
+    },
+    {
+      "id": "missing-gstin",
+      "fileName": "02-missing-gstin.png",
+      "expectedStatus": "NEEDS_REVIEW",
+      "expectedExceptions": ["GSTIN_MISSING"],
+      "expectedFields": {
+        "vendorName": "Bhopal Packaging Works",
+        "gstin": null,
+        "invoiceNumber": "BPW-4402",
+        "invoiceDate": "2026-08-21",
+        "subtotal": 12500,
+        "cgst": 1125,
+        "sgst": 1125,
+        "igst": 0,
+        "total": 14750,
+        "lineItems": [
+          { "name": "Corrugated Box", "quantity": 250, "rate": 50, "amount": 12500 }
+        ]
+      }
+    },
+    {
+      "id": "total-mismatch",
+      "fileName": "03-total-mismatch.png",
+      "expectedStatus": "NEEDS_REVIEW",
+      "expectedExceptions": ["TOTAL_MISMATCH"],
+      "expectedFields": {
+        "vendorName": "Narmada Industrial Supplies",
+        "gstin": "23PQRSX6789K1Z2",
+        "invoiceNumber": "NIS-778",
+        "invoiceDate": "2026-08-22",
+        "subtotal": 2000,
+        "cgst": 180,
+        "sgst": 180,
+        "igst": 0,
+        "displayedTotal": 2000,
+        "calculatedTotal": 2360,
+        "lineItems": [
+          { "name": "Safety Gloves", "quantity": 10, "rate": 200, "amount": 2000 }
+        ]
+      }
+    },
+    {
+      "id": "duplicate-invoice",
+      "fileName": "04-duplicate-invoice.png",
+      "expectedStatus": "NEEDS_REVIEW",
+      "expectedExceptions": ["DUPLICATE_INVOICE"],
+      "expectedFields": {
+        "vendorName": "Madhya Steel Traders",
+        "gstin": "23ABCDE1234F1Z5",
+        "invoiceNumber": "MST-2026-081",
+        "invoiceDate": "2026-08-20",
+        "subtotal": 11500,
+        "cgst": 1035,
+        "sgst": 1035,
+        "igst": 0,
+        "total": 13570
+      }
+    },
+    {
+      "id": "interstate-igst",
+      "fileName": "05-interstate-igst.png",
+      "expectedStatus": "READY_FOR_APPROVAL",
+      "expectedExceptions": [],
+      "expectedFields": {
+        "vendorName": "Indore Tools and Fasteners",
+        "gstin": "23LMNOP4321Q1Z7",
+        "invoiceNumber": "ITF-0926",
+        "invoiceDate": "2026-08-23",
+        "subtotal": 8000,
+        "cgst": 0,
+        "sgst": 0,
+        "igst": 1440,
+        "total": 9440,
+        "lineItems": [
+          { "name": "Hex Bolt Set", "quantity": 100, "rate": 80, "amount": 8000 }
+        ]
+      }
+    },
+    {
+      "id": "low-quality-missing-quantity",
+      "fileName": "06-low-quality-missing-quantity.png",
+      "expectedStatus": "NEEDS_REVIEW",
+      "expectedExceptions": ["LOW_CONFIDENCE", "QUANTITY_MISSING"],
+      "expectedFields": {
+        "vendorName": "Satpura Electricals",
+        "gstin": "23UVWXY2468R1Z8",
+        "invoiceNumber": "SE-00192",
+        "invoiceDate": "2026-08-23",
+        "subtotal": 3600,
+        "cgst": 324,
+        "sgst": 324,
+        "igst": 0,
+        "total": 4248,
+        "lineItems": [
+          { "name": "Copper Cable Roll", "quantity": null, "rate": 1200, "amount": 3600 }
+        ]
+      }
+    }
+  ]
+}
