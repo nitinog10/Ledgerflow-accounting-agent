@@ -13,9 +13,11 @@ import type { LineItem } from '@/lib/types';
 export function LineItemsEditor({
   items,
   onChange,
+  locked = false,
 }: {
   items: LineItem[];
   onChange: (next: LineItem[]) => void;
+  locked?: boolean;
 }) {
   const update = (index: number, patch: Partial<LineItem>) => {
     onChange(items.map((item, position) => (position === index ? { ...item, ...patch } : item)));
@@ -39,16 +41,20 @@ export function LineItemsEditor({
     <div className="border border-rule bg-paper">
       <div className="rule-b flex items-center justify-between bg-paper-raised px-[14px] py-2.5">
         <h3 className="eyebrow">Line items</h3>
-        <button
-          type="button"
-          onClick={() =>
-            onChange([...items, { name: '', quantity: null, rate: null, amount: null, hsn: null }])
-          }
-          className="inline-flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-soft hover:text-ink"
-        >
-          <Plus aria-hidden className="h-3 w-3" />
-          Add a row
-        </button>
+        {locked ? (
+          <span className="eyebrow text-ledger">Locked</span>
+        ) : (
+          <button
+            type="button"
+            onClick={() =>
+              onChange([...items, { name: '', quantity: null, rate: null, amount: null, hsn: null }])
+            }
+            className="inline-flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-soft hover:text-ink"
+          >
+            <Plus aria-hidden className="h-3 w-3" />
+            Add a row
+          </button>
+        )}
       </div>
 
       {items.length === 0 ? (
@@ -76,9 +82,11 @@ export function LineItemsEditor({
                 <th scope="col" className="eyebrow w-[108px] px-2 py-2 text-right font-normal">
                   Amount
                 </th>
-                <th scope="col" className="w-[40px] px-2 py-2">
-                  <span className="sr-only">Remove</span>
-                </th>
+                {locked ? null : (
+                  <th scope="col" className="w-[40px] px-2 py-2">
+                    <span className="sr-only">Remove</span>
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="green-bar">
@@ -92,6 +100,7 @@ export function LineItemsEditor({
                       value={item.name}
                       onChange={(next) => update(index, { name: next ?? '' })}
                       placeholder="description"
+                      readOnly={locked}
                     />
                   </td>
                   <td className="px-1 py-1">
@@ -101,6 +110,7 @@ export function LineItemsEditor({
                       onChange={(next) => update(index, { hsn: next })}
                       placeholder="—"
                       mono
+                      readOnly={locked}
                     />
                   </td>
                   <td className="px-1 py-1">
@@ -109,6 +119,7 @@ export function LineItemsEditor({
                       value={item.quantity}
                       onChange={(next) => update(index, { quantity: next })}
                       group={false}
+                      readOnly={locked}
                     />
                   </td>
                   <td className="px-1 py-1">
@@ -116,6 +127,7 @@ export function LineItemsEditor({
                       label={`Rate for ${row}`}
                       value={item.rate}
                       onChange={(next) => update(index, { rate: next })}
+                      readOnly={locked}
                     />
                   </td>
                   <td className="px-1 py-1">
@@ -126,18 +138,21 @@ export function LineItemsEditor({
                       placeholder={
                         rowAmount(item) === null ? 'not read' : figure(rowAmount(item))
                       }
+                      readOnly={locked}
                     />
                   </td>
-                  <td className="px-2 py-1 text-right">
-                    <button
-                      type="button"
-                      onClick={() => onChange(items.filter((_, position) => position !== index))}
-                      className="text-ink-faint transition-colors hover:text-stamp"
-                      aria-label={`Remove ${item.name || 'this row'}`}
-                    >
-                      <Trash2 aria-hidden className="h-3.5 w-3.5" />
-                    </button>
-                  </td>
+                  {locked ? null : (
+                    <td className="px-2 py-1 text-right">
+                      <button
+                        type="button"
+                        onClick={() => onChange(items.filter((_, position) => position !== index))}
+                        className="text-ink-faint transition-colors hover:text-stamp"
+                        aria-label={`Remove ${item.name || 'this row'}`}
+                      >
+                        <Trash2 aria-hidden className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
                 );
               })}
@@ -169,12 +184,14 @@ function CellInput({
   onChange,
   placeholder,
   mono = false,
+  readOnly = false,
 }: {
   label: string;
   value: string | null;
   onChange: (next: string | null) => void;
   placeholder?: string;
   mono?: boolean;
+  readOnly?: boolean;
 }) {
   return (
     <input
@@ -182,8 +199,11 @@ function CellInput({
       aria-label={label}
       value={value ?? ''}
       placeholder={placeholder}
+      readOnly={readOnly}
       onChange={(event) => onChange(event.target.value.length === 0 ? null : event.target.value)}
-      className={`${cellBase} ${mono ? 'font-mono' : ''}`}
+      className={`${cellBase} ${mono ? 'font-mono' : ''} ${
+        readOnly ? 'cursor-default text-ink-soft' : ''
+      }`}
     />
   );
 }
@@ -195,12 +215,14 @@ function CellNumber({
   onChange,
   placeholder = '—',
   group = true,
+  readOnly = false,
 }: {
   label: string;
   value: number | null;
   onChange: (next: number | null) => void;
   placeholder?: string;
   group?: boolean;
+  readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [buffer, setBuffer] = useState('');
@@ -214,7 +236,9 @@ function CellNumber({
       aria-label={label}
       value={editing ? buffer : idle}
       placeholder={placeholder}
+      readOnly={readOnly}
       onFocus={() => {
+        if (readOnly) return;
         setBuffer(value === null ? '' : String(value));
         setEditing(true);
       }}
@@ -229,7 +253,9 @@ function CellNumber({
         if (Number.isFinite(parsed)) onChange(round2(parsed));
       }}
       onBlur={() => setEditing(false)}
-      className={`${cellBase} text-right font-mono tabular-nums`}
+      className={`${cellBase} text-right font-mono tabular-nums ${
+        readOnly ? 'cursor-default text-ink-soft' : ''
+      }`}
     />
   );
 }

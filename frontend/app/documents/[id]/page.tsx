@@ -42,18 +42,21 @@ export default function ReviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  // State lands in the promise callbacks rather than in the effect body, so a
+  // poll tick never cascades a synchronous re-render.
   const load = useCallback(
-    async (options?: { keepDraft?: boolean }) => {
-      try {
-        const response = await api.getDocument(documentId);
-        setDocument(response.document);
-        setPreviewSrc(response.previewUrl ?? fileUrl(response.previewPath));
-        if (!options?.keepDraft) setDraft(response.document.fields);
-        setError(null);
-      } catch (caught) {
-        setError(caught instanceof ApiError ? caught.message : 'Could not load this document.');
-      }
-    },
+    (options?: { keepDraft?: boolean }) =>
+      api.getDocument(documentId).then(
+        (response) => {
+          setDocument(response.document);
+          setPreviewSrc(response.previewUrl ?? fileUrl(response.previewPath));
+          if (!options?.keepDraft) setDraft(response.document.fields);
+          setError(null);
+        },
+        (caught: unknown) => {
+          setError(caught instanceof ApiError ? caught.message : 'Could not load this document.');
+        },
+      ),
     [documentId],
   );
 
@@ -202,8 +205,10 @@ export default function ReviewPage() {
           </div>
 
           {/* The checks speak for themselves below; this line is only the
-              model's own remark about how the read went. */}
-          {document.explanation ? (
+              model's own remark about how the read went. It describes the
+              original extraction, so it is dropped once the entry is settled
+              and the corrections have superseded it. */}
+          {document.explanation && !closed ? (
             <p className="mt-5 max-w-3xl border-l-2 border-rule-strong pl-3.5 text-[14px] leading-relaxed text-ink-soft">
               <span className="eyebrow mr-2">Read note</span>
               {document.explanation}
@@ -267,15 +272,18 @@ export default function ReviewPage() {
               ) : null}
             </section>
 
+            {/* A settled entry is a record, not a form. */}
             <FieldsEditor
               fields={draft}
               exceptions={document.exceptions}
               onChange={setDraft}
+              locked={closed}
             />
 
             <LineItemsEditor
               items={draft.lineItems}
               onChange={(lineItems) => setDraft({ ...draft, lineItems })}
+              locked={closed}
             />
 
             {reminder ? (

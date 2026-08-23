@@ -21,18 +21,24 @@ export default function InboxPage() {
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
-  const refresh = useCallback(async () => {
-    try {
-      const response = await api.listDocuments();
-      setDocuments(response.documents);
-      setStats(response.stats);
-      setError(null);
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : 'Could not load the inbox.');
-    } finally {
-      setLoaded(true);
-    }
-  }, []);
+  // State lands in the promise callbacks rather than in the effect body, so a
+  // poll tick never cascades a synchronous re-render.
+  const refresh = useCallback(
+    () =>
+      api.listDocuments().then(
+        (response) => {
+          setDocuments(response.documents);
+          setStats(response.stats);
+          setError(null);
+          setLoaded(true);
+        },
+        (caught: unknown) => {
+          setError(caught instanceof ApiError ? caught.message : 'Could not load the inbox.');
+          setLoaded(true);
+        },
+      ),
+    [],
+  );
 
   useEffect(() => {
     void refresh();

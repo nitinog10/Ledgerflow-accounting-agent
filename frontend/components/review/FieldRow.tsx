@@ -69,7 +69,13 @@ export function FieldGroupRow({
 }
 
 const inputBase =
-  'w-full bg-transparent px-2 py-1.5 text-[14px] text-ink outline-none transition-colors placeholder:text-ink-faint/70 hover:bg-paper-raised focus:bg-paper-raised';
+  'w-full bg-transparent px-2 py-1.5 text-[14px] text-ink outline-none transition-colors placeholder:text-ink-faint/70';
+const editable = 'hover:bg-paper-raised focus:bg-paper-raised';
+const locked = 'cursor-default text-ink-soft';
+
+/** A locked field is still readable and copyable, just not writable. */
+const shell = (isLocked: boolean, extra = '') =>
+  `${inputBase} ${isLocked ? locked : editable} ${extra}`;
 
 export function TextField({
   id,
@@ -79,6 +85,7 @@ export function TextField({
   mono = false,
   uppercase = false,
   maxLength,
+  readOnly = false,
 }: {
   id: string;
   value: string | null;
@@ -87,6 +94,7 @@ export function TextField({
   mono?: boolean;
   uppercase?: boolean;
   maxLength?: number;
+  readOnly?: boolean;
 }) {
   return (
     <input
@@ -94,12 +102,13 @@ export function TextField({
       type="text"
       value={value ?? ''}
       maxLength={maxLength}
+      readOnly={readOnly}
       onChange={(event) => {
         const next = uppercase ? event.target.value.toUpperCase() : event.target.value;
         onChange(next.length === 0 ? null : next);
       }}
       placeholder={placeholder ?? 'not read'}
-      className={`${inputBase} ${mono ? 'font-mono tracking-[0.02em]' : ''}`}
+      className={shell(readOnly, mono ? 'font-mono tracking-[0.02em]' : '')}
     />
   );
 }
@@ -108,18 +117,21 @@ export function DateField({
   id,
   value,
   onChange,
+  readOnly = false,
 }: {
   id: string;
   value: string | null;
   onChange: (next: string | null) => void;
+  readOnly?: boolean;
 }) {
   return (
     <input
       id={id}
       type="date"
       value={value ?? ''}
+      readOnly={readOnly}
       onChange={(event) => onChange(event.target.value.length === 0 ? null : event.target.value)}
-      className={`${inputBase} font-mono`}
+      className={shell(readOnly, 'font-mono')}
     />
   );
 }
@@ -135,12 +147,14 @@ export function AmountField({
   onChange,
   align = 'right',
   placeholder = 'not read',
+  readOnly = false,
 }: {
   id: string;
   value: number | null;
   onChange: (next: number | null) => void;
   align?: 'left' | 'right';
   placeholder?: string;
+  readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [buffer, setBuffer] = useState('');
@@ -153,7 +167,9 @@ export function AmountField({
       type="text"
       inputMode="decimal"
       value={display}
+      readOnly={readOnly}
       onFocus={() => {
+        if (readOnly) return;
         setBuffer(value === null ? '' : String(value));
         setEditing(true);
       }}
@@ -170,7 +186,7 @@ export function AmountField({
       }}
       onBlur={() => setEditing(false)}
       placeholder={placeholder}
-      className={`${inputBase} font-mono tabular-nums ${align === 'right' ? 'text-right' : ''}`}
+      className={shell(readOnly, `font-mono tabular-nums ${align === 'right' ? 'text-right' : ''}`)}
     />
   );
 }

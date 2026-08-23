@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { ReconciliationProof } from './ReconciliationProof';
 import { shortDate } from '@/lib/format';
@@ -45,19 +44,10 @@ export function QueueHero({
   const cleared = (stats?.readyForApproval ?? 0) + (stats?.approved ?? 0) + (stats?.exported ?? 0);
   const feature = first ?? latestApproved;
 
-  // Rendered after mount so the server and the browser cannot disagree on the
-  // locale-formatted date.
-  const [today, setToday] = useState('');
-  useEffect(() => {
-    setToday(
-      new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }),
-    );
-  }, []);
-
   return (
     <section className="mx-auto grid max-w-[1180px] gap-x-12 gap-y-8 px-5 pt-10 pb-9 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
       <div>
-        <p className="eyebrow">The queue{today ? ` · ${today}` : ''}</p>
+        <p className="eyebrow">The queue</p>
 
         <h1 className="mt-4 max-w-[16ch] font-display text-[clamp(2.1rem,5.6vw,3.4rem)] leading-[1.02] font-bold tracking-[-0.035em] text-ink">
           {needsReview === 0 ? (
