@@ -5,7 +5,12 @@ import {
 } from '@aws-sdk/client-bedrock-runtime';
 import { z } from 'zod';
 import { config } from '../config/env.js';
-import { lineItemSchema, taxSchema, type InvoiceFields } from '../types/document.js';
+import {
+  emptyInvoiceFields,
+  lineItemSchema,
+  taxSchema,
+  type InvoiceFields,
+} from '../types/document.js';
 import { parseInvoiceDate } from '../utils/dates.js';
 import { normalizeGstin } from '../utils/gstin.js';
 import { logger } from '../utils/logger.js';
@@ -52,8 +57,84 @@ export interface NormalizationResult {
   explanation: string;
 }
 
+/**
+ * Vision extraction: used when Textract is not configured. Nova Lite reads the
+ * invoice image directly. The same rules apply as everywhere else - the model
+ * transcribes what is printed, deterministic code decides what it means.
+ */
+const VISION_SYSTEM_PROMPT = `You are an invoice extraction assistant for an Indian accounting workflow.
+Read the supplied invoice document and transcribe ONLY what is printed on it. Never invent or calculate a value.
+If a value is unreadable or absent, set it to null and list its name in missingFields.
+Dates must be YYYY-MM-DD. Amounts must be plain numbers with no currency symbols or separators.
+gstin is the SUPPLIER's 15-character GST number, uppercase (not the buyer's).
+subTotal is the taxable value before tax. total is the grand total printed on the bill.
+hasSignature is true only when a handwritten signature, initials or a stamp is visible; false when the signature area is clearly blank; null when unclear.
+confidence is your overall reading confidence between 0 and 1; lower it for blurry or cut-off scans.
+Reply with a single JSON object and no other text, using exactly this shape:
+{"fields":{"vendorName":string|null,"gstin":string|null,"invoiceNumber":string|null,"invoiceDate":string|null,"placeOfSupply":string|null,"lineItems":[{"name":string,"quantity":number|null,"rate":number|null,"amount":number|null,"hsn":string|null}],"subTotal":number|null,"tax":{"cgst":number|null,"sgst":number|null,"igst":number|null},"total":number|null,"hasSignature":boolean|null},"confidence":number,"missingFields":[string],"explanation":string}`;
+
+const visionResponseSchema = z.object({
+  fields: z.object({
+    vendorName: z.string().nullable().optional(),
+    gstin: z.string().nullable().optional(),
+    invoiceNumber: z.string().nullable().optional(),
+    invoiceDate: z.string().nullable().optional(),
+    placeOfSupply: z.string().nullable().optional(),
+    lineItems: z
+      .array(lineItemSchema.partial({ quantity: true, rate: true, amount: true, hsn: true }))
+      .optional(),
+    subTotal: z.union([z.number(), z.string()]).nullable().optional(),
+    tax: taxSchema.partial().optional(),
+    total: z.union([z.number(), z.string()]).nullable().optional(),
+    hasSignature: z.boolean().nullable().optional(),
+  }),
+  confidence: z.number().optional(),
+  missingFields: z.array(z.string()).default([]),
+  explanation: z.string().default(''),
+});
+
+export interface VisionExtractionResult {
+  fields: InvoiceFields;
+  confidence: number;
+  missingFields: string[];
+  explanation: string;
+}
+
+/** Bedrock Converse image formats, by upload MIME type. */
+const IMAGE_FORMATS: Record<string, 'jpeg' | 'png' | 'webp' | 'gif'> = {
+  'image/jpeg': 'jpeg',
+  'image/jpg': 'jpeg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
+
 export class BedrockService {
-  private readonly client = new BedrockRuntimeClient({ region: config.aws.region });
+  private readonly client = new BedrockRuntimeClient({ region: config.aws.bedrockRegion });
+
+  /** One Converse round-trip that must come back as JSON. */
+  private async converseJson(
+    system: string,
+    content: ContentBlock[],
+    maxTokens: number,
+  ): Promise<unknown> {
+    const response = await this.client.send(
+      new ConverseCommand({
+        modelId: config.aws.bedrockModelId,
+        system: [{ text: system }],
+        messages: [{ role: 'user', content }],
+        inferenceConfig: { temperature: 0, maxTokens, topP: 0.1 },
+      }),
+    );
+
+    const text = (response.output?.message?.content ?? [])
+      .map((block: ContentBlock) => ('text' in block ? block.text : ''))
+      .join('')
+      .trim();
+
+    if (text.length === 0) throw new Error('Bedrock returned an empty response');
+    return extractJson(text);
+  }
 
   async normalize(input: {
     fields: InvoiceFields;
@@ -64,28 +145,9 @@ export class BedrockService {
       fieldConfidence: input.fieldConfidence,
     };
 
-    const response = await this.client.send(
-      new ConverseCommand({
-        modelId: config.aws.bedrockModelId,
-        system: [{ text: SYSTEM_PROMPT }],
-        messages: [
-          {
-            role: 'user',
-            content: [{ text: JSON.stringify(payload) }],
-          },
-        ],
-        inferenceConfig: { temperature: 0, maxTokens: 1500, topP: 0.1 },
-      }),
-    );
+    const raw = await this.converseJson(SYSTEM_PROMPT, [{ text: JSON.stringify(payload) }], 1500);
 
-    const text = (response.output?.message?.content ?? [])
-      .map((block: ContentBlock) => ('text' in block ? block.text : ''))
-      .join('')
-      .trim();
-
-    if (text.length === 0) throw new Error('Bedrock returned an empty response');
-
-    const parsed = bedrockResponseSchema.safeParse(extractJson(text));
+    const parsed = bedrockResponseSchema.safeParse(raw);
     if (!parsed.success) {
       throw new Error(
         `Bedrock response failed schema validation: ${parsed.error.issues
@@ -107,6 +169,101 @@ export class BedrockService {
       explanation: parsed.data.explanation.trim(),
     };
   }
+
+  /**
+   * Reads an invoice image or PDF with the vision model. Used as the primary
+   * extractor when Textract is not configured. Throws for file types Bedrock
+   * cannot take (SVG samples never reach here - they use the demo path).
+   */
+  async extractFromDocument(input: {
+    bytes: Buffer;
+    mimeType: string;
+  }): Promise<VisionExtractionResult> {
+    const block = documentBlock(input.bytes, input.mimeType);
+    const raw = await this.converseJson(
+      VISION_SYSTEM_PROMPT,
+      [block, { text: 'Extract the invoice fields as specified.' }],
+      2000,
+    );
+
+    const parsed = visionResponseSchema.safeParse(raw);
+    if (!parsed.success) {
+      throw new Error(
+        `Bedrock vision response failed schema validation: ${parsed.error.issues
+          .map((issue) => issue.path.join('.'))
+          .join(', ')}`,
+      );
+    }
+
+    const fields = coerceVisionFields(parsed.data.fields);
+    // An out-of-range or missing self-assessment reads as "not sure", which the
+    // validator turns into a low-confidence review flag rather than a guess.
+    const confidence =
+      typeof parsed.data.confidence === 'number' && Number.isFinite(parsed.data.confidence)
+        ? Math.min(1, Math.max(0, parsed.data.confidence))
+        : 0.6;
+
+    logger.debug('Bedrock vision extraction complete', {
+      confidence,
+      lineItems: fields.lineItems.length,
+    });
+
+    return {
+      fields,
+      confidence,
+      missingFields: parsed.data.missingFields,
+      explanation: parsed.data.explanation.trim(),
+    };
+  }
+}
+
+/** Builds the Converse content block for the uploaded file. */
+function documentBlock(bytes: Buffer, mimeType: string): ContentBlock {
+  const imageFormat = IMAGE_FORMATS[mimeType.toLowerCase()];
+  if (imageFormat) {
+    return { image: { format: imageFormat, source: { bytes } } };
+  }
+  if (mimeType === 'application/pdf') {
+    return { document: { format: 'pdf', name: 'invoice', source: { bytes } } };
+  }
+  throw new Error(`Bedrock vision cannot read "${mimeType}" files`);
+}
+
+/** Coerces the model's transcription into typed fields; parse failures -> null. */
+function coerceVisionFields(
+  suggested: z.infer<typeof visionResponseSchema>['fields'],
+): InvoiceFields {
+  const text = (value: string | null | undefined): string | null => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  };
+
+  return {
+    ...emptyInvoiceFields(),
+    vendorName: text(suggested.vendorName),
+    gstin: normalizeGstin(text(suggested.gstin)),
+    invoiceNumber: text(suggested.invoiceNumber),
+    invoiceDate: suggested.invoiceDate ? parseInvoiceDate(suggested.invoiceDate) : null,
+    placeOfSupply: text(suggested.placeOfSupply),
+    lineItems: (suggested.lineItems ?? [])
+      .filter((item) => text(item.name) !== null || item.amount != null)
+      .map((item) => ({
+        name: text(item.name) ?? 'Unlabelled item',
+        quantity: parseAmount(item.quantity ?? null),
+        rate: parseAmount(item.rate ?? null),
+        amount: parseAmount(item.amount ?? null),
+        hsn: text(item.hsn),
+      })),
+    subTotal: parseAmount(suggested.subTotal ?? null),
+    tax: {
+      cgst: parseAmount(suggested.tax?.cgst ?? null),
+      sgst: parseAmount(suggested.tax?.sgst ?? null),
+      igst: parseAmount(suggested.tax?.igst ?? null),
+    },
+    total: parseAmount(suggested.total ?? null),
+    hasSignature: typeof suggested.hasSignature === 'boolean' ? suggested.hasSignature : null,
+  };
 }
 
 /** Models sometimes wrap JSON in prose or a fenced block. */

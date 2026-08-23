@@ -64,7 +64,7 @@ export interface InvoiceDocument {
   fingerprint: string | null;
   storageKey: string;
   source: 'UPLOAD' | 'DEMO' | 'WHATSAPP' | 'GMAIL' | 'DRIVE';
-  extractionEngine: 'TEXTRACT_BEDROCK' | 'TEXTRACT' | 'DEMO_FALLBACK' | 'NONE';
+  extractionEngine: 'TEXTRACT_BEDROCK' | 'TEXTRACT' | 'BEDROCK_VISION' | 'DEMO_FALLBACK' | 'NONE';
   fields: InvoiceFields;
   confidence: number | null;
   exceptions: InvoiceException[];

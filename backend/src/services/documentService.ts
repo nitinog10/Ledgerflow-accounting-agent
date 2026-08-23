@@ -133,6 +133,7 @@ export class DocumentService {
 
     const outcome = await this.extraction.extract({
       bytes,
+      mimeType: existing.mimeType,
       fileHash: existing.fileHash,
       demoSlug: slug,
     });
@@ -580,6 +581,8 @@ function engineLabel(engine: InvoiceDocument['extractionEngine']): string {
       return 'Textract + Bedrock';
     case 'TEXTRACT':
       return 'Textract';
+    case 'BEDROCK_VISION':
+      return 'Bedrock Nova vision';
     case 'DEMO_FALLBACK':
       return 'Sample extraction';
     default:

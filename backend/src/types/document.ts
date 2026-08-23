@@ -113,7 +113,9 @@ export const documentSchema = z.object({
   fingerprint: z.string().nullable().default(null),
   storageKey: z.string(),
   source: z.enum(['UPLOAD', 'DEMO', 'WHATSAPP', 'GMAIL', 'DRIVE']).default('UPLOAD'),
-  extractionEngine: z.enum(['TEXTRACT_BEDROCK', 'TEXTRACT', 'DEMO_FALLBACK', 'NONE']).default('NONE'),
+  extractionEngine: z
+    .enum(['TEXTRACT_BEDROCK', 'TEXTRACT', 'BEDROCK_VISION', 'DEMO_FALLBACK', 'NONE'])
+    .default('NONE'),
   fields: invoiceFieldsSchema,
   confidence: z.number().min(0).max(1).nullable().default(null),
   exceptions: z.array(exceptionSchema).default([]),

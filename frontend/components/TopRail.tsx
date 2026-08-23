@@ -33,7 +33,9 @@ export function TopRail({ crumb }: { crumb?: string }) {
     ? health.adapters.bedrock
       ? 'Textract + Bedrock'
       : 'Textract'
-    : 'Sample extraction';
+    : health?.adapters.bedrock
+      ? 'Bedrock vision'
+      : 'Sample extraction';
 
   return (
     <header className="rule-b bg-paper-raised">

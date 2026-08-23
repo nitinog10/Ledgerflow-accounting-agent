@@ -9,7 +9,7 @@
 LedgerFlow turns supplier invoice photos and PDFs into validated, export-ready accounting entries. It combines document intelligence with deterministic GST and arithmetic checks, then routes only exceptions to an accountant for approval.
 
 <p align="center">
-  <a href="#the-problem">Problem</a> · <a href="#our-solution">Solution</a> · <a href="#how-it-works">Architecture</a> · <a href="#run-locally">Run locally</a> · <a href="#deployment">Deploy</a>
+  <a href="#the-problem">Problem</a> | <a href="#our-solution">Solution</a> | <a href="#how-it-works">Architecture</a> | <a href="#run-locally">Run locally</a> | <a href="#deployment">Deploy</a>
 </p>
 
 ---

@@ -1,3 +1,6 @@
+// Load backend/.env before anything reads process.env. Harmless when the file
+// is absent (deployed environments set real variables instead).
+import 'dotenv/config';
 import { z } from 'zod';
 
 /**
@@ -20,6 +23,8 @@ const envSchema = z.object({
   S3_BUCKET: z.string().optional(),
   DYNAMODB_TABLE: z.string().optional(),
   BEDROCK_MODEL_ID: z.string().default('us.amazon.nova-lite-v1:0'),
+  /** Bedrock may live in a different region than the data (model availability). */
+  BEDROCK_REGION: z.string().optional(),
 
   /** "auto" enables the service only when AWS credentials look reachable. */
   ENABLE_TEXTRACT: toggle,
@@ -81,6 +86,7 @@ export const config = {
     s3Bucket: raw.S3_BUCKET,
     dynamoTable: raw.DYNAMODB_TABLE,
     bedrockModelId: raw.BEDROCK_MODEL_ID,
+    bedrockRegion: raw.BEDROCK_REGION ?? raw.AWS_REGION,
     credentialsPresent,
   },
 

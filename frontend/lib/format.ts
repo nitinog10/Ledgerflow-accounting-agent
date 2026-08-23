@@ -117,6 +117,7 @@ export function exceptionLabel(code: string): string {
 export const ENGINE_LABELS: Record<string, string> = {
   TEXTRACT_BEDROCK: 'Textract + Bedrock',
   TEXTRACT: 'Textract',
+  BEDROCK_VISION: 'Bedrock Nova vision',
   DEMO_FALLBACK: 'Sample extraction',
   NONE: 'Not extracted',
 };
