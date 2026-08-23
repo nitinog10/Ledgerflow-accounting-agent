@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   Check,
   Loader2,
+  Mail,
   MessageCircle,
   RotateCcw,
   Save,
@@ -22,10 +23,18 @@ import { ExceptionList } from '@/components/review/ExceptionList';
 import { ExportRail } from '@/components/review/ExportRail';
 import { FieldsEditor } from '@/components/review/FieldsEditor';
 import { LineItemsEditor } from '@/components/review/LineItemsEditor';
+import { DeclineModal } from '@/components/review/DeclineModal';
+import { EmailRequestPanel } from '@/components/review/EmailRequestPanel';
 import { ReminderPanel } from '@/components/review/ReminderPanel';
 import { api, ApiError, fileUrl } from '@/lib/api';
 import { ENGINE_LABELS } from '@/lib/format';
-import type { InvoiceDocument, InvoiceFields, ReminderDraft } from '@/lib/types';
+import type {
+  EmailNotification,
+  InfoRequestResult,
+  InvoiceDocument,
+  InvoiceFields,
+  ReminderDraft,
+} from '@/lib/types';
 
 const ACTOR = 'Demo Accountant';
 
@@ -38,6 +47,8 @@ export default function ReviewPage() {
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [draft, setDraft] = useState<InvoiceFields | null>(null);
   const [reminder, setReminder] = useState<ReminderDraft | null>(null);
+  const [infoRequest, setInfoRequest] = useState<InfoRequestResult | null>(null);
+  const [declineNotice, setDeclineNotice] = useState<EmailNotification | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -101,6 +112,10 @@ export default function ReviewPage() {
             ? 'Rejected. It will not reach the books.'
             : 'Corrections saved and re-checked.',
       );
+      // A rejection pops the vendor-facing notice the moment it lands.
+      if (action === 'REJECT' && response.notification) {
+        setDeclineNotice(response.notification);
+      }
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'That did not go through.');
     } finally {
@@ -117,6 +132,20 @@ export default function ReviewPage() {
       setReminder(response.reminder);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Could not draft the reminder.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const requestInfo = async () => {
+    setBusy('REQUEST_INFO');
+    setError(null);
+    try {
+      const response = await api.requestInfo(documentId, `${ACTOR}, Nagar Enterprises`);
+      setDocument(response.document);
+      setInfoRequest(response.request);
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'Could not email the vendor.');
     } finally {
       setBusy(null);
     }
@@ -290,6 +319,10 @@ export default function ReviewPage() {
               <ReminderPanel draft={reminder} onClose={() => setReminder(null)} />
             ) : null}
 
+            {infoRequest ? (
+              <EmailRequestPanel result={infoRequest} onClose={() => setInfoRequest(null)} />
+            ) : null}
+
             {approved ? (
               <ExportRail
                 document={document}
@@ -351,6 +384,20 @@ export default function ReviewPage() {
 
                   <button
                     type="button"
+                    onClick={() => void requestInfo()}
+                    disabled={busy !== null}
+                    className="inline-flex items-center gap-2 border border-rule bg-paper px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-soft transition-colors hover:text-ink disabled:opacity-45"
+                  >
+                    {busy === 'REQUEST_INFO' ? (
+                      <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Mail aria-hidden className="h-3.5 w-3.5" />
+                    )}
+                    Request missing details
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => void retryExtraction()}
                     disabled={busy !== null}
                     className="inline-flex items-center gap-2 px-2.5 py-2.5 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint transition-colors hover:text-ink disabled:opacity-45"
@@ -405,6 +452,10 @@ export default function ReviewPage() {
           </div>
         </div>
       </main>
+
+      {declineNotice ? (
+        <DeclineModal notification={declineNotice} onClose={() => setDeclineNotice(null)} />
+      ) : null}
     </>
   );
 }

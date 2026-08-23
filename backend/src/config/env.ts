@@ -34,6 +34,15 @@ const envSchema = z.object({
   LOCAL_STORAGE_DIR: z.string().default('.data/uploads'),
   /** Persist the in-memory repository to this JSON file so restarts keep the inbox. */
   LOCAL_DB_FILE: z.string().default('.data/documents.json'),
+
+  /** Vendor notifications. SMTP is optional; without it emails are simulated. */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
+  /** Where vendor-facing emails (missing details, decline notices) are sent. */
+  VENDOR_NOTIFY_EMAIL: z.string().email().default('nitiniszod10@gmail.com'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -93,11 +102,21 @@ export const config = {
   localStorageDir: raw.LOCAL_STORAGE_DIR,
   localDbFile: raw.LOCAL_DB_FILE,
 
+  email: {
+    host: raw.SMTP_HOST,
+    port: raw.SMTP_PORT,
+    user: raw.SMTP_USER,
+    pass: raw.SMTP_PASS,
+    from: raw.EMAIL_FROM ?? raw.SMTP_USER ?? 'ledgerflow@localhost',
+    vendorEmail: raw.VENDOR_NOTIFY_EMAIL,
+  },
+
   features: {
     s3: Boolean(raw.S3_BUCKET),
     dynamo: Boolean(raw.DYNAMODB_TABLE),
     textract: resolveToggle(raw.ENABLE_TEXTRACT, credentialsPresent),
     bedrock: resolveToggle(raw.ENABLE_BEDROCK, credentialsPresent),
+    email: Boolean(raw.SMTP_HOST && raw.SMTP_USER && raw.SMTP_PASS),
   },
 } as const;
 

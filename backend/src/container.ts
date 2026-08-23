@@ -3,6 +3,7 @@ import { DynamoDocumentRepository } from './repositories/dynamoDocumentRepositor
 import { MemoryDocumentRepository } from './repositories/memoryDocumentRepository.js';
 import type { DocumentRepository } from './repositories/documentRepository.js';
 import { DocumentService } from './services/documentService.js';
+import { EmailService } from './services/emailService.js';
 import { ExtractionService } from './services/extractionService.js';
 import { createStorageService, type StorageService } from './services/storageService.js';
 import { logger } from './utils/logger.js';
@@ -24,13 +25,19 @@ export async function createContainer(): Promise<Container> {
       : await MemoryDocumentRepository.create(config.localDbFile);
 
   const storage = createStorageService();
-  const documents = new DocumentService(repository, storage, new ExtractionService());
+  const documents = new DocumentService(
+    repository,
+    storage,
+    new ExtractionService(),
+    new EmailService(),
+  );
 
   logger.info('LedgerFlow container ready', {
     repository: repository.name,
     storage: storage.name,
     textract: config.features.textract,
     bedrock: config.features.bedrock,
+    email: config.features.email ? 'smtp' : 'simulated',
   });
 
   return { repository, storage, documents };

@@ -111,6 +111,22 @@ export interface ReminderDraft {
   note: string;
 }
 
+/** A vendor-facing email the backend sent (or simulated without SMTP). */
+export interface EmailNotification {
+  to: string;
+  subject: string;
+  body: string;
+  delivered: boolean;
+  mode: 'SMTP' | 'SIMULATED';
+  error: string | null;
+}
+
+export interface InfoRequestResult {
+  email: EmailNotification;
+  missingFields: string[];
+  note: string;
+}
+
 export interface ReviewPayload {
   action: 'SAVE' | 'APPROVE' | 'REJECT';
   actor?: string;
@@ -127,5 +143,6 @@ export interface HealthReport {
     storage: string;
     textract: boolean;
     bedrock: string | false;
+    email: string | false;
   };
 }

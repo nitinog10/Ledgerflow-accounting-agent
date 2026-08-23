@@ -1,8 +1,10 @@
 import type {
   DemoInvoiceSummary,
   DocumentStats,
+  EmailNotification,
   ExportArtifact,
   HealthReport,
+  InfoRequestResult,
   InvoiceDocument,
   ReminderDraft,
   ReviewPayload,
@@ -86,10 +88,19 @@ export const api = {
     request<{ document: InvoiceDocument }>(`/api/documents/${id}/process`, { method: 'POST' }),
 
   review: (id: string, payload: ReviewPayload) =>
-    request<{ document: InvoiceDocument }>(`/api/documents/${id}/review`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    }),
+    request<{ document: InvoiceDocument; notification: EmailNotification | null }>(
+      `/api/documents/${id}/review`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      },
+    ),
+
+  requestInfo: (id: string, senderName: string) =>
+    request<{ document: InvoiceDocument; request: InfoRequestResult }>(
+      `/api/documents/${id}/request-info`,
+      { method: 'POST', body: JSON.stringify({ senderName }) },
+    ),
 
   exportCsv: (id: string, actor: string) =>
     request<{ document: InvoiceDocument; export: ExportArtifact }>(

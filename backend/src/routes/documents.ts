@@ -31,6 +31,10 @@ const reminderBodySchema = z.object({
   senderName: z.string().min(1).max(120).default('Demo Accountant, Nagar Enterprises'),
 });
 
+const requestInfoBodySchema = z.object({
+  senderName: z.string().min(1).max(120).default('Demo Accountant, Nagar Enterprises'),
+});
+
 export function documentRoutes(container: Container): Router {
   const router = Router();
   const { documents } = container;
@@ -136,7 +140,8 @@ export function documentRoutes(container: Container): Router {
   router.patch('/:id/review', async (req, res, next) => {
     try {
       const request = reviewRequestSchema.parse(req.body ?? {});
-      res.json({ document: await documents.review(req.params.id, request) });
+      const { document, notification } = await documents.review(req.params.id, request);
+      res.json({ document, notification });
     } catch (error) {
       next(error);
     }
@@ -159,6 +164,28 @@ export function documentRoutes(container: Container): Router {
       const document = await documents.markExported(req.params.id, 'TALLY_XML', actor);
       const artifact = toTallyXml(document);
       res.json({ document, export: { format: 'TALLY_XML', ...artifact } });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  /** Emails the vendor asking them to send the missing credentials. */
+  router.post('/:id/request-info', async (req, res, next) => {
+    try {
+      const { senderName } = requestInfoBodySchema.parse(req.body ?? {});
+      const result = await documents.requestMissingInfo(req.params.id, senderName);
+      res.json({
+        document: result.document,
+        request: {
+          email: result.email,
+          missingFields: result.missingFields,
+          note: result.email.delivered
+            ? `Sent via SMTP to ${result.email.to}.`
+            : result.email.mode === 'SIMULATED'
+              ? 'SMTP is not configured, so the email was recorded in the audit trail but not delivered.'
+              : `Delivery failed: ${result.email.error ?? 'unknown error'}.`,
+        },
+      });
     } catch (error) {
       next(error);
     }

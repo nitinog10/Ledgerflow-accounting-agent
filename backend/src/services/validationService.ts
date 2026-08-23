@@ -320,6 +320,41 @@ export function buildReminderMessage(input: {
   return `${greeting}\n\nWe received ${reference} but a few details are not readable. ${ask}\n\nThank you,\n${input.senderName}`;
 }
 
+/** Email asking the vendor to send the fields extraction could not read. */
+export function buildMissingInfoEmail(input: {
+  vendorName: string | null;
+  invoiceNumber: string | null;
+  missingFields: string[];
+  senderName: string;
+}): { subject: string; body: string } {
+  const reference = input.invoiceNumber ? `invoice ${input.invoiceNumber}` : 'your invoice';
+  return {
+    subject: `Action needed: missing details on ${reference}`,
+    body: buildReminderMessage(input),
+  };
+}
+
+/** Email telling the vendor their invoice was declined, and why. */
+export function buildDeclineEmail(input: {
+  vendorName: string | null;
+  invoiceNumber: string | null;
+  reason: string | null;
+  senderName: string;
+}): { subject: string; body: string } {
+  const greeting = input.vendorName ? `Hello ${input.vendorName} team,` : 'Hello,';
+  const reference = input.invoiceNumber
+    ? `invoice ${input.invoiceNumber}`
+    : 'the invoice you sent us';
+  const reason = input.reason ?? 'It did not pass our review checks.';
+
+  return {
+    subject: input.invoiceNumber
+      ? `Invoice ${input.invoiceNumber} has been declined`
+      : 'Your invoice has been declined',
+    body: `${greeting}\n\nWe reviewed ${reference} and it has been declined.\nReason: ${reason}\n\nPlease correct the document and send it again, or reply to this email for further information.\n\nThank you,\n${input.senderName}`,
+  };
+}
+
 function formatList(values: string[]): string {
   if (values.length <= 1) return values[0] ?? '';
   if (values.length === 2) return `${values[0]} and ${values[1]}`;

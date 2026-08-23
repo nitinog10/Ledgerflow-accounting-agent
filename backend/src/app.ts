@@ -37,6 +37,7 @@ export function createApp(container: Container): express.Express {
         storage: container.storage.name,
         textract: config.features.textract,
         bedrock: config.features.bedrock ? config.aws.bedrockModelId : false,
+        email: config.features.email ? config.email.vendorEmail : false,
       },
       at: new Date().toISOString(),
     });

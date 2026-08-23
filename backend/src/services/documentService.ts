@@ -17,9 +17,16 @@ import { conflict, notFound, unprocessable } from '../utils/errors.js';
 import { invoiceFingerprint, sha256 } from '../utils/hash.js';
 import { logger } from '../utils/logger.js';
 import { normalizeGstin } from '../utils/gstin.js';
+import type { EmailResult, EmailService } from './emailService.js';
 import type { ExtractionService } from './extractionService.js';
 import { documentStorageKey, type StorageService } from './storageService.js';
-import { buildReminderMessage, validateInvoice } from './validationService.js';
+import {
+  buildDeclineEmail,
+  buildMissingInfoEmail,
+  buildReminderMessage,
+  FIELD_LABELS,
+  validateInvoice,
+} from './validationService.js';
 
 export interface DocumentStats {
   total: number;
@@ -43,6 +50,7 @@ export class DocumentService {
     private readonly repository: DocumentRepository,
     private readonly storage: StorageService,
     private readonly extraction: ExtractionService,
+    private readonly email: EmailService,
   ) {}
 
   // ---------------------------------------------------------------- creation
@@ -280,9 +288,13 @@ export class DocumentService {
   /**
    * Applies accountant corrections, re-runs validation on the corrected data,
    * and records the action. Approval is refused while a blocking exception is
-   * unresolved, so nothing unvalidated can reach an export.
+   * unresolved, so nothing unvalidated can reach an export. A rejection also
+   * emails the vendor a decline notice and reports it back to the UI.
    */
-  async review(documentId: string, request: ReviewRequest): Promise<InvoiceDocument> {
+  async review(
+    documentId: string,
+    request: ReviewRequest,
+  ): Promise<{ document: InvoiceDocument; notification: EmailResult | null }> {
     const existing = await this.require(documentId);
 
     if (existing.status === 'EXPORTED') {
@@ -293,6 +305,15 @@ export class DocumentService {
     }
 
     if (request.action === 'REJECT') {
+      const notification = await this.email.send(
+        buildDeclineEmail({
+          vendorName: existing.fields.vendorName,
+          invoiceNumber: existing.fields.invoiceNumber,
+          reason: request.reason ?? null,
+          senderName: request.actor,
+        }),
+      );
+
       const rejected: InvoiceDocument = {
         ...existing,
         status: 'REJECTED',
@@ -305,11 +326,19 @@ export class DocumentService {
             action: 'REJECTED',
             detail: request.reason ?? null,
           },
+          {
+            at: nowIso(),
+            actor: 'LedgerFlow',
+            action: 'DECLINE_EMAILED',
+            detail: notification.delivered
+              ? `Decline notice emailed to ${notification.to}.`
+              : `Decline notice recorded for ${notification.to} (SMTP not configured, so nothing was delivered).`,
+          },
         ],
         updatedAt: nowIso(),
       };
       await this.repository.put(rejected);
-      return rejected;
+      return { document: rejected, notification };
     }
 
     const changes = request.fields ?? {};
@@ -390,7 +419,7 @@ export class DocumentService {
       action: request.action,
       status: updated.status,
     });
-    return updated;
+    return { document: updated, notification: null };
   }
 
   // ----------------------------------------------------------------- export
@@ -467,6 +496,57 @@ export class DocumentService {
     await this.repository.put(updated);
 
     return { message, missingFields: validation.missingFields, document: updated };
+  }
+
+  /**
+   * Emails the vendor asking them to send the credentials extraction could
+   * not read (GSTIN, invoice number, and so on). The decline email in
+   * review() covers rejected invoices; this covers the chase while the
+   * entry is still open.
+   */
+  async requestMissingInfo(documentId: string, senderName: string): Promise<{
+    document: InvoiceDocument;
+    email: EmailResult;
+    missingFields: string[];
+  }> {
+    const existing = await this.require(documentId);
+    const validation = validateInvoice({
+      fields: existing.fields,
+      confidence: existing.confidence,
+    });
+
+    const email = await this.email.send(
+      buildMissingInfoEmail({
+        vendorName: existing.fields.vendorName,
+        invoiceNumber: existing.fields.invoiceNumber,
+        missingFields: validation.missingFields,
+        senderName,
+      }),
+    );
+
+    const asked =
+      validation.missingFields.length > 0
+        ? validation.missingFields.map((field) => FIELD_LABELS[field] ?? field).join(', ')
+        : 'a clearer copy of the document';
+
+    const updated: InvoiceDocument = {
+      ...existing,
+      audit: [
+        ...existing.audit,
+        {
+          at: nowIso(),
+          actor: senderName,
+          action: 'INFO_REQUESTED',
+          detail: email.delivered
+            ? `Emailed ${email.to} asking for: ${asked}.`
+            : `Email recorded for ${email.to} asking for: ${asked} (SMTP not configured).`,
+        },
+      ],
+      updatedAt: nowIso(),
+    };
+    await this.repository.put(updated);
+
+    return { document: updated, email, missingFields: validation.missingFields };
   }
 
   // ---------------------------------------------------------------- helpers
