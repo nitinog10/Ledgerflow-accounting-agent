@@ -82,10 +82,13 @@ export function LineItemsEditor({
               </tr>
             </thead>
             <tbody className="green-bar">
-              {items.map((item, index) => (
+              {items.map((item, index) => {
+                const row = item.name || `row ${index + 1}`;
+                return (
                 <tr key={index} className="rule-b">
                   <td className="px-[10px] py-1">
                     <CellInput
+                      label={`Item description, row ${index + 1}`}
                       value={item.name}
                       onChange={(next) => update(index, { name: next ?? '' })}
                       placeholder="description"
@@ -93,6 +96,7 @@ export function LineItemsEditor({
                   </td>
                   <td className="px-1 py-1">
                     <CellInput
+                      label={`HSN code for ${row}`}
                       value={item.hsn}
                       onChange={(next) => update(index, { hsn: next })}
                       placeholder="—"
@@ -101,16 +105,22 @@ export function LineItemsEditor({
                   </td>
                   <td className="px-1 py-1">
                     <CellNumber
+                      label={`Quantity of ${row}`}
                       value={item.quantity}
                       onChange={(next) => update(index, { quantity: next })}
                       group={false}
                     />
                   </td>
                   <td className="px-1 py-1">
-                    <CellNumber value={item.rate} onChange={(next) => update(index, { rate: next })} />
+                    <CellNumber
+                      label={`Rate for ${row}`}
+                      value={item.rate}
+                      onChange={(next) => update(index, { rate: next })}
+                    />
                   </td>
                   <td className="px-1 py-1">
                     <CellNumber
+                      label={`Amount for ${row}`}
                       value={item.amount}
                       onChange={(next) => update(index, { amount: next })}
                       placeholder={
@@ -129,7 +139,8 @@ export function LineItemsEditor({
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
             <tfoot>
               <tr>
@@ -153,11 +164,13 @@ const cellBase =
   'w-full bg-transparent px-1.5 py-1 text-[13px] text-ink outline-none placeholder:text-ink-faint/70 focus:bg-paper-raised';
 
 function CellInput({
+  label,
   value,
   onChange,
   placeholder,
   mono = false,
 }: {
+  label: string;
   value: string | null;
   onChange: (next: string | null) => void;
   placeholder?: string;
@@ -166,6 +179,7 @@ function CellInput({
   return (
     <input
       type="text"
+      aria-label={label}
       value={value ?? ''}
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value.length === 0 ? null : event.target.value)}
@@ -176,11 +190,13 @@ function CellInput({
 
 /** Same grouped-while-idle behaviour as the field sheet, in a table cell. */
 function CellNumber({
+  label,
   value,
   onChange,
   placeholder = '—',
   group = true,
 }: {
+  label: string;
   value: number | null;
   onChange: (next: number | null) => void;
   placeholder?: string;
