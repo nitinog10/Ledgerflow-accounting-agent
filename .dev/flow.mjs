@@ -34,11 +34,13 @@ await step('approve is blocked while the total is wrong', async () => {
 });
 
 await step('correct the invoice total to 47,200', async () => {
-  const totalRow = page.locator('div', { has: page.getByText('Invoice total', { exact: true }) });
-  const input = totalRow.locator('input').last();
+  const input = page.getByLabel('Invoice total', { exact: true });
   await input.click();
   await input.fill('47200');
   await input.blur();
+  if ((await input.inputValue()) !== '47,200.00') {
+    throw new Error(`total field did not format: ${await input.inputValue()}`);
+  }
   await page.getByRole('button', { name: /save and re-check/i }).click();
   await page.getByText('Corrections saved and re-checked.').waitFor({ timeout: 10000 });
 });

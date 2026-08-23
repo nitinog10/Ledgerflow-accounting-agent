@@ -211,6 +211,7 @@ function CellNumber({
     <input
       type="text"
       inputMode="decimal"
+      aria-label={label}
       value={editing ? buffer : idle}
       placeholder={placeholder}
       onFocus={() => {
