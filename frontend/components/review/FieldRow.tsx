@@ -7,13 +7,18 @@ import { figure, round2 } from '@/lib/format';
  * One ruled row of the extraction sheet: printed label on the left, editable
  * value on the right. A field named by an exception carries a stamp-red edge,
  * so the eye lands on what needs fixing without reading anything.
+ *
+ * The label is a real <label for>, so every figure on this sheet has a name a
+ * screen reader can announce.
  */
 export function FieldRow({
+  id,
   label,
   hint,
   flagged,
   children,
 }: {
+  id: string;
   label: string;
   hint?: string;
   flagged?: boolean;
@@ -26,7 +31,9 @@ export function FieldRow({
       }`}
     >
       <div>
-        <span className="eyebrow block leading-tight">{label}</span>
+        <label htmlFor={id} className="eyebrow block leading-tight">
+          {label}
+        </label>
         {hint ? <span className="mt-0.5 block text-[11px] text-ink-faint">{hint}</span> : null}
       </div>
       {children}
@@ -34,10 +41,38 @@ export function FieldRow({
   );
 }
 
+/** A row whose control is a group rather than a single input. */
+export function FieldGroupRow({
+  label,
+  hint,
+  flagged,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  flagged?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset
+      className={`rule-b grid grid-cols-[minmax(96px,132px)_minmax(0,1fr)] items-center gap-3 py-1.5 pr-1 ${
+        flagged ? 'border-l-2 border-l-stamp bg-stamp-wash/40 pl-3' : 'pl-[14px]'
+      }`}
+    >
+      <div>
+        <legend className="eyebrow block leading-tight">{label}</legend>
+        {hint ? <span className="mt-0.5 block text-[11px] text-ink-faint">{hint}</span> : null}
+      </div>
+      {children}
+    </fieldset>
+  );
+}
+
 const inputBase =
   'w-full bg-transparent px-2 py-1.5 text-[14px] text-ink outline-none transition-colors placeholder:text-ink-faint/70 hover:bg-paper-raised focus:bg-paper-raised';
 
 export function TextField({
+  id,
   value,
   onChange,
   placeholder,
@@ -45,6 +80,7 @@ export function TextField({
   uppercase = false,
   maxLength,
 }: {
+  id: string;
   value: string | null;
   onChange: (next: string | null) => void;
   placeholder?: string;
@@ -54,6 +90,7 @@ export function TextField({
 }) {
   return (
     <input
+      id={id}
       type="text"
       value={value ?? ''}
       maxLength={maxLength}
@@ -68,14 +105,17 @@ export function TextField({
 }
 
 export function DateField({
+  id,
   value,
   onChange,
 }: {
+  id: string;
   value: string | null;
   onChange: (next: string | null) => void;
 }) {
   return (
     <input
+      id={id}
       type="date"
       value={value ?? ''}
       onChange={(event) => onChange(event.target.value.length === 0 ? null : event.target.value)}
@@ -90,11 +130,13 @@ export function DateField({
  * you are not typing in it and hands you the raw number the moment you are.
  */
 export function AmountField({
+  id,
   value,
   onChange,
   align = 'right',
   placeholder = 'not read',
 }: {
+  id: string;
   value: number | null;
   onChange: (next: number | null) => void;
   align?: 'left' | 'right';
@@ -107,6 +149,7 @@ export function AmountField({
 
   return (
     <input
+      id={id}
       type="text"
       inputMode="decimal"
       value={display}
