@@ -182,6 +182,7 @@ For a no-terminal AWS walkthrough, see [AWS_CONSOLE_SETUP.md](AWS_CONSOLE_SETUP.
 
 - [Problem and solution](PROBLEM_AND_SOLUTION.md)
 - [Implementation plan](IMPLEMENTATION_PLAN.md)
+- [Complete system architecture and logic](SYSTEM_ARCHITECTURE.md)
 - [AWS console setup](AWS_CONSOLE_SETUP.md)
 - [AWS technical setup](AWS_SETUP.md)
 
